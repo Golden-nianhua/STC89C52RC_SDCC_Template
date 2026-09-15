@@ -1,0 +1,77 @@
+# STC89C52RC 串口 ISP 下载配置
+#
+# 本文件是用户需要修改的唯一下载配置文件。所有硬件选项只能填写 true 或 false：
+#   true  = 对应官方 STC-ISP 工具中的“选择/勾选”
+#   false = 对应官方 STC-ISP 工具中的“不选/不勾选”
+#
+# 可用的 CMake 目标：
+#   stc-config-check    检查本文件的格式和选项取值。
+#   stc-info            读取芯片型号、时钟、BSL 版本和当前硬件选项。
+#   flash               下载程序，保留芯片当前的全部硬件选项。
+#   flash-with-options  下载程序，同时写入本文件 [hardware_options] 中的选项。
+#
+# 命令行使用示例：
+#   cmake --build build/Debug --target stc-config-check
+#   cmake --build build/Debug --target stc-info
+#   cmake --build build/Debug --target flash
+#   cmake --build build/Debug --target flash-with-options
+#
+# 在 CLion 中，可以打开“CMake”工具窗口，然后构建同名目标。
+# 当终端显示 "Waiting for MCU, please cycle power" 时，需要给单片机断电再上电。
+
+[connection]
+# 与单片机 ISP 串口连接的 Windows 串口号，例如 "COM1"、"COM6"。
+port = "COM1"
+
+# STC89C52RC 通常使用 "stc89"。
+# 只有 BSL 版本为 7.2.5C 时使用 "stc89a"；不确定时可以使用 "auto"。
+protocol = "stc89"
+
+# 冷启动后 ROM 下载程序最初使用的握手波特率，通常保持 2400。
+handshake_baud = 2400
+
+# 正式传输程序时使用的波特率。
+# 19200 对老款 STC89 和常见 USB 转串口芯片更稳；确认稳定后可尝试 115200。
+transfer_baud = 19200
+
+[hardware_options]
+# 注意：以下选项仅由 flash-with-options 使用。
+# flash 目标会忽略本节并原样保留芯片当前配置，stc-info 只读取、不写入。
+
+# 系统速度是否加倍。
+# true：采用 6T（双倍速）模式。
+# false：不加倍，采用 12T（单倍速）模式。
+double_speed_6t = true
+
+# 是否降低振荡器的放大增益来降低功耗。
+# true：使用 1/2 增益，建议 16 MHz 以下使用。
+# false：放大增益不降低，建议 16 MHz 以上使用。
+reduce_oscillator_gain = true
+
+# 当用户使能看门狗定时器后，如何停止看门狗。
+# true：只有 MCU 断电后看门狗才停止。
+# false：任何复位都可停止看门狗。
+# 警告：选择 true 后，程序必须在启动后立即正确喂狗，否则可能持续复位。
+watchdog_stop_requires_power_cycle = false
+
+# 是否使用 MCU 内部的扩展 RAM。
+# true：内部扩展 RAM 可用。
+# false：内部扩展 RAM 不可用。
+internal_xram_enabled = true
+
+# 下次下载用户程序时，是否将用户 EEPROM 区一并擦除。
+# true：下次下载时将用户 EEPROM 区一并擦除。
+# false：下次下载时不擦除用户 EEPROM 区。
+# 警告：选择 true 可能永久丢失 EEPROM 中的用户数据。
+erase_eeprom_on_next_download = false
+
+# 下次是否需要 P1.0 和 P1.1 同时为低电平时才可下载程序。
+# true：只有 P1.0 和 P1.1 同时为低电平时才可下载。
+# false：下载时不检测 P1.0 和 P1.1 的电平。
+# 启用前必须确认电路能够可靠拉低这两个引脚，否则可能无法再次进入 ISP。
+require_p1_0_p1_1_low_for_download = false
+
+# ALE 脚的功能选择。
+# true：ALE 脚当作 P4.5 口使用。
+# false：仍然作为 ALE 功能脚使用。
+ale_as_p4_5 = false

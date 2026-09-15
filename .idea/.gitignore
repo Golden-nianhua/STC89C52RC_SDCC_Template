@@ -1,0 +1,8 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+/editor.xml
+/copilot.data.migration.*.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+/deployment.xml
