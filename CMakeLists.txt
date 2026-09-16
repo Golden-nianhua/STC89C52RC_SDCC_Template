@@ -10,6 +10,9 @@ endif()
 
 project(${CMAKE_PROJECT_NAME} LANGUAGES C ASM)
 
+# 让 CLion 将主固件、配置检查和烧录目标收纳在同一文件夹中。
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 if(NOT CMAKE_C_COMPILER_ID STREQUAL "SDCC")
     message(FATAL_ERROR "This project must be configured with SDCC")
 endif()
@@ -19,6 +22,11 @@ set(STC_IRAM_SIZE 256 CACHE STRING "Internal data RAM size in bytes")
 set(STC_XRAM_SIZE 256 CACHE STRING "On-chip extended RAM size in bytes")
 
 add_executable(${CMAKE_PROJECT_NAME})
+
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/firmware"
+    FOLDER "${CMAKE_PROJECT_NAME}"
+)
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/main.c
@@ -57,6 +65,7 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 set(firmware_ihx "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>")
 set(firmware_hex "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${CMAKE_PROJECT_NAME}>.hex")
 set(firmware_bin "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${CMAKE_PROJECT_NAME}>.bin")
+set(firmware_mem "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/$<TARGET_FILE_BASE_NAME:${CMAKE_PROJECT_NAME}>.mem")
 
 add_custom_command(
     TARGET ${CMAKE_PROJECT_NAME}
@@ -67,13 +76,23 @@ add_custom_command(
         "-DOUTPUT=${firmware_hex}"
         -P "${CMAKE_SOURCE_DIR}/cmake/packihx.cmake"
     COMMAND "${SDCC_MAKEBIN}" -p "${firmware_ihx}" "${firmware_bin}"
+    COMMAND "${CMAKE_COMMAND}"
+        "-DNAME=${CMAKE_PROJECT_NAME}"
+        "-DMEM=${firmware_mem}"
+        "-DIHX=${firmware_ihx}"
+        "-DHEX=${firmware_hex}"
+        "-DBIN=${firmware_bin}"
+        "-DCODE_SIZE=${STC_CODE_SIZE}"
+        "-DIRAM_SIZE=${STC_IRAM_SIZE}"
+        "-DXRAM_SIZE=${STC_XRAM_SIZE}"
+        -P "${CMAKE_SOURCE_DIR}/cmake/firmware-report.cmake"
     COMMENT "Generating HEX and BIN images"
     VERBATIM
 )
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     ADDITIONAL_CLEAN_FILES
-        "${CMAKE_PROJECT_NAME}.bin;${CMAKE_PROJECT_NAME}.hex;${CMAKE_PROJECT_NAME}.lk;${CMAKE_PROJECT_NAME}.map;${CMAKE_PROJECT_NAME}.mem"
+        "${CMAKE_BINARY_DIR}/firmware/${CMAKE_PROJECT_NAME}.bin;${CMAKE_BINARY_DIR}/firmware/${CMAKE_PROJECT_NAME}.hex;${CMAKE_BINARY_DIR}/firmware/${CMAKE_PROJECT_NAME}.lk;${CMAKE_BINARY_DIR}/firmware/${CMAKE_PROJECT_NAME}.map;${CMAKE_BINARY_DIR}/firmware/${CMAKE_PROJECT_NAME}.mem"
 )
 
 include(cmake/stcgal-targets.cmake)

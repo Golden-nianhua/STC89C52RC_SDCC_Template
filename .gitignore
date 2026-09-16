@@ -1,2 +1,10 @@
 /build/
 /cmake-build*/
+/Misc/stcgal.toml
+*.adb
+*.lst
+*.rel
+*.rst
+*.sym
+__pycache__/
+*.pyc

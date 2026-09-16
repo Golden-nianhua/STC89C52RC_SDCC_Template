@@ -3,6 +3,8 @@
 /workspace.xml
 /editor.xml
 /copilot.data.migration.*.xml
+/vcs.xml
+/runConfigurations/STC89_Auto_*.xml
 # Editor-based HTTP Client requests
 /httpRequests/
 /deployment.xml

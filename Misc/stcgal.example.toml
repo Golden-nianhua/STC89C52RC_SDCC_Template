@@ -1,23 +1,15 @@
-# STC89C52RC 串口 ISP 下载配置
+# STC89C52RC 串口 ISP 下载配置示例
 #
-# 本文件是用户需要修改的唯一下载配置文件。所有硬件选项只能填写 true 或 false：
+# 首次使用时复制为 stcgal.toml，再按本机环境修改。stcgal.toml 不提交到 Git。
+# 所有硬件选项只能填写 true 或 false：
 #   true  = 对应官方 STC-ISP 工具中的“选择/勾选”
 #   false = 对应官方 STC-ISP 工具中的“不选/不勾选”
 #
-# 可用的 CMake 目标：
+# CMake 目标：
 #   stc-config-check    检查本文件的格式和选项取值。
 #   stc-info            读取芯片型号、时钟、BSL 版本和当前硬件选项。
-#   flash               下载程序，保留芯片当前的全部硬件选项。
-#   flash-with-options  下载程序，同时写入本文件 [hardware_options] 中的选项。
-#
-# 命令行使用示例：
-#   cmake --build build/Debug --target stc-config-check
-#   cmake --build build/Debug --target stc-info
-#   cmake --build build/Debug --target flash
-#   cmake --build build/Debug --target flash-with-options
-#
-# 在 CLion 中，可以打开“CMake”工具窗口，然后构建同名目标。
-# 当终端显示 "Waiting for MCU, please cycle power" 时，需要给单片机断电再上电。
+#   flash               下载程序，保留芯片当前硬件选项。
+#   flash-with-options  下载程序，并写入本文件中的硬件选项。
 
 [connection]
 # 与单片机 ISP 串口连接的 Windows 串口号，例如 "COM1"、"COM6"。
@@ -34,9 +26,21 @@ handshake_baud = 2400
 # 19200 对老款 STC89 和常见 USB 转串口芯片更稳；确认稳定后可尝试 115200。
 transfer_baud = 19200
 
+# 是否在连接前自动给 MCU 断电再上电。
+# true：stc-info、flash 和 flash-with-options 均先自动冷启动。
+# false：不控制电源，等待用户手动断电再上电。
+auto_power_cycle = false
+
+# 自动冷启动使用的控制线，可选值为 "dtr" 或 "rts"。
+reset_pin = "rts"
+
+# true：切换 RTS 前明确将 DTR 设为无效。
+# 适用于 DTR 保持无效、RTS 有效时切断 MCU 电源的下载电路。
+# false：保持 stcgal 默认行为，不主动设置 DTR。
+keep_dtr_inactive = false
+
 [hardware_options]
-# 注意：以下选项仅由 flash-with-options 使用。
-# flash 目标会忽略本节并原样保留芯片当前配置，stc-info 只读取、不写入。
+# 以下选项仅由 flash-with-options 使用；普通 flash 保留芯片当前硬件选项。
 
 # 系统速度是否加倍。
 # true：采用 6T（双倍速）模式。
