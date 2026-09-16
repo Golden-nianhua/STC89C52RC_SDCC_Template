@@ -1,8 +1,0 @@
-//
-// Created by Golde on 2025/11/8.
-//
-
-#ifndef STC89C52RC_SDCC_TEMPLATE_SPI_H
-#define STC89C52RC_SDCC_TEMPLATE_SPI_H
-
-#endif //STC89C52RC_SDCC_TEMPLATE_SPI_H

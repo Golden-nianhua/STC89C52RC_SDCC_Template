@@ -15,6 +15,11 @@ from typing import Any
 
 
 SUPPORTED_PROTOCOLS = {"auto", "stc89", "stc89a"}
+SUPPORTED_RESET_PINS = {"dtr", "rts"}
+RESET_PIN_LABELS = {
+    "dtr": "DTR 正向控制",
+    "rts": "RTS 正向控制",
+}
 BOOLEAN_OPTION_MAP = (
     ("double_speed_6t", "cpu_6t_enabled"),
     ("watchdog_stop_requires_power_cycle", "watchdog_por_enabled"),
@@ -42,7 +47,9 @@ def require_value(section: dict[str, Any], key: str, expected_type: type) -> Any
     return value
 
 
-def load_config(path: Path) -> tuple[list[str], list[str], dict[str, bool]]:
+def load_config(
+    path: Path,
+) -> tuple[list[str], list[str], dict[str, bool], dict[str, Any]]:
     with path.open("rb") as config_file:
         config = tomllib.load(config_file)
 
@@ -53,6 +60,9 @@ def load_config(path: Path) -> tuple[list[str], list[str], dict[str, bool]]:
     protocol = require_value(connection, "protocol", str)
     handshake_baud = require_value(connection, "handshake_baud", int)
     transfer_baud = require_value(connection, "transfer_baud", int)
+    auto_power_cycle = require_value(connection, "auto_power_cycle", bool)
+    reset_pin = require_value(connection, "reset_pin", str)
+    keep_dtr_inactive = require_value(connection, "keep_dtr_inactive", bool)
 
     if not port:
         raise ValueError("connection.port must not be empty")
@@ -60,6 +70,10 @@ def load_config(path: Path) -> tuple[list[str], list[str], dict[str, bool]]:
         raise ValueError(f"connection.protocol must be one of {sorted(SUPPORTED_PROTOCOLS)}")
     if handshake_baud <= 0 or transfer_baud <= 0:
         raise ValueError("baud rates must be positive integers")
+    if reset_pin not in SUPPORTED_RESET_PINS:
+        raise ValueError(f"connection.reset_pin must be one of {sorted(SUPPORTED_RESET_PINS)}")
+    if keep_dtr_inactive and reset_pin != "rts":
+        raise ValueError("connection.keep_dtr_inactive requires reset_pin = 'rts'")
 
     base_arguments = [
         "-P", protocol,
@@ -67,6 +81,8 @@ def load_config(path: Path) -> tuple[list[str], list[str], dict[str, bool]]:
         "-l", str(handshake_baud),
         "-b", str(transfer_baud),
     ]
+    if auto_power_cycle:
+        base_arguments.extend(("-a", "-A", reset_pin))
 
     option_arguments: list[str] = []
     for config_key, stcgal_key in BOOLEAN_OPTION_MAP:
@@ -85,7 +101,40 @@ def load_config(path: Path) -> tuple[list[str], list[str], dict[str, bool]]:
         key: require_value(options, key, bool)
         for key, _ in HARDWARE_OPTION_LABELS
     }
-    return base_arguments, option_arguments, hardware_options
+    connection_behavior = {
+        "auto_power_cycle": auto_power_cycle,
+        "reset_pin": reset_pin,
+        "keep_dtr_inactive": keep_dtr_inactive,
+    }
+    return base_arguments, option_arguments, hardware_options, connection_behavior
+
+
+def print_connection_behavior(connection: dict[str, Any]) -> None:
+    if connection["auto_power_cycle"]:
+        effect = RESET_PIN_LABELS[connection["reset_pin"]]
+        if connection["keep_dtr_inactive"]:
+            effect += "，DTR 保持无效"
+        print(f"自动冷启动：启用，{effect}。")
+    else:
+        print("自动冷启动：关闭，需要手动给单片机断电再上电。")
+
+
+def configure_power_cycle(connection: dict[str, Any]) -> None:
+    if not connection["auto_power_cycle"] or not connection["keep_dtr_inactive"]:
+        return
+    from stcgal.protocols import StcBaseProtocol
+
+    original_reset_device = StcBaseProtocol.reset_device
+
+    def reset_device(
+        protocol: StcBaseProtocol,
+        resetcmd: str | bool = False,
+        resetpin: str | bool = False,
+    ) -> None:
+        protocol.ser.setDTR(False)
+        original_reset_device(protocol, resetcmd, resetpin)
+
+    StcBaseProtocol.reset_device = reset_device
 
 
 def print_hardware_options(options: dict[str, bool], heading: str) -> None:
@@ -147,16 +196,21 @@ def main() -> int:
     # Chinese status messages are not encoded with the legacy system code page.
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
+    # Keep status text and stcgal progress on one stream so CLion preserves order.
+    sys.stderr = sys.stdout
 
     arguments = parse_arguments()
 
     try:
-        base_arguments, option_arguments, hardware_options = load_config(arguments.config)
+        base_arguments, option_arguments, hardware_options, connection_behavior = load_config(
+            arguments.config
+        )
     except (OSError, tomllib.TOMLDecodeError, ValueError) as error:
         print(f"Configuration error in {arguments.config}: {error}", file=sys.stderr)
         return 2
 
     if arguments.action == "check":
+        print_connection_behavior(connection_behavior)
         print_hardware_options(
             hardware_options,
             "配置中的硬件选项效果：",
@@ -165,6 +219,7 @@ def main() -> int:
         return 0
 
     stcgal_arguments = [*base_arguments]
+    print_connection_behavior(connection_behavior)
     if arguments.action == "info":
         print("读取芯片型号、时钟、BSL 版本和当前硬件选项。")
     elif arguments.action == "flash":
@@ -190,6 +245,7 @@ def main() -> int:
     from stcgal.frontend import cli as stcgal_cli
 
     replace_stcgal_option_output()
+    configure_power_cycle(connection_behavior)
 
     original_argv = sys.argv
     try:

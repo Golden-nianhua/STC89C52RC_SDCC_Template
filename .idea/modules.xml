@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/STC89C52RC_SDCC_Template.iml" filepath="$PROJECT_DIR$/.idea/STC89C52RC_SDCC_Template.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/STC89_Coursework.iml" filepath="$PROJECT_DIR$/.idea/STC89_Coursework.iml" />
     </modules>
   </component>
 </project>

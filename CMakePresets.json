@@ -8,7 +8,7 @@
       "toolchainFile": "${sourceDir}/cmake/sdcc-mcs51-toolchain.cmake"
     },
     {
-      "name": "STC89C52RC-Debug",
+      "name": "STC89-Debug",
       "inherits": "default",
       "binaryDir": "${sourceDir}/build/Debug",
       "cacheVariables": {
@@ -16,7 +16,7 @@
       }
     },
     {
-      "name": "STC89C52RC-Release",
+      "name": "STC89-Release",
       "inherits": "default",
       "binaryDir": "${sourceDir}/build/Release",
       "cacheVariables": {
