@@ -8,6 +8,8 @@
 # CMake 目标：
 #   stc-config-check    检查本文件的格式和选项取值。
 #   stc-info            读取芯片型号、时钟、BSL 版本和当前硬件选项。
+#
+# CLion 烧录运行配置：
 #   flash               下载程序，保留芯片当前硬件选项。
 #   flash-with-options  下载程序，并写入本文件中的硬件选项。
 
@@ -40,7 +42,7 @@ reset_pin = "rts"
 keep_dtr_inactive = false
 
 [hardware_options]
-# 以下选项仅由 flash-with-options 使用；普通 flash 保留芯片当前硬件选项。
+# 以下选项仅由 flash-with-options 运行配置使用；普通 flash 保留芯片当前硬件选项。
 
 # 系统速度是否加倍。
 # true：采用 6T（双倍速）模式。

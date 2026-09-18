@@ -197,6 +197,8 @@ def main() -> int:
     # Chinese status messages are not encoded with the legacy system code page.
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
+    # Keep status text and stcgal progress on one stream so CLion preserves order.
+    sys.stderr = sys.stdout
 
     arguments = parse_arguments()
 

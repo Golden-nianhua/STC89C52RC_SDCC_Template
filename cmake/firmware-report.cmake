@@ -117,9 +117,15 @@ file(SIZE "${IHX}" ihx_size)
 file(SIZE "${HEX}" hex_size)
 file(SIZE "${BIN}" bin_size)
 
-message("固件信息：${NAME}")
-message("Memory region         Used Size  Region Size  %age Used")
-message("${code_row}")
-message("${iram_row}")
-message("${xram_row}")
-message("Firmware files: IHX ${ihx_size} B, HEX ${hex_size} B, BIN ${bin_size} B")
+# Plain message() writes NOTICE output to stderr. Printing through cmake -E echo
+# keeps the complete report on stdout so CLion cannot interleave it with stcgal.
+foreach(report_line IN ITEMS
+    "Firmware: ${NAME}"
+    "Memory region         Used Size  Region Size  %age Used"
+    "${code_row}"
+    "${iram_row}"
+    "${xram_row}"
+    "Firmware files: IHX ${ihx_size} B, HEX ${hex_size} B, BIN ${bin_size} B"
+)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E echo "${report_line}")
+endforeach()

@@ -5,6 +5,7 @@
 /copilot.data.migration.*.xml
 /vcs.xml
 /runConfigurations/STC89_Auto_*.xml
+/STC89_Auto_RunConfigs.lock
 # Editor-based HTTP Client requests
 /httpRequests/
 /deployment.xml

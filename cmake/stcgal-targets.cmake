@@ -10,6 +10,16 @@ find_program(
 set(STCGAL_CONFIG "${CMAKE_SOURCE_DIR}/Misc/stcgal.toml")
 set(STCGAL_RUNNER "${CMAKE_SOURCE_DIR}/tools/stcgal_runner.py")
 set(STCGAL_CLION_RUN_CONFIG_DIR "${CMAKE_SOURCE_DIR}/.idea/runConfigurations")
+set(STCGAL_CLION_RUN_CONFIG_LOCK "${CMAKE_SOURCE_DIR}/.idea/STC89_Auto_RunConfigs.lock")
+
+if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea")
+    file(
+        LOCK "${STCGAL_CLION_RUN_CONFIG_LOCK}"
+        GUARD PROCESS
+        TIMEOUT 60
+        RESULT_VARIABLE STCGAL_CLION_RUN_CONFIG_LOCK_RESULT
+    )
+endif()
 
 if(UV_EXECUTABLE)
     set(stcgal_runner_command
@@ -19,62 +29,44 @@ if(UV_EXECUTABLE)
 
     add_custom_target(stc-config-check
         COMMAND ${stcgal_runner_command} check
-        COMMENT "检查本机 STC 下载配置"
-        USES_TERMINAL
+        COMMENT "Validating the local STC configuration"
         VERBATIM
     )
 
     add_custom_target(stc-info
         COMMAND ${stcgal_runner_command} info
-        COMMENT "读取 STC 芯片信息和当前硬件选项"
-        USES_TERMINAL
-        VERBATIM
-    )
-
-    add_custom_target(flash
-        COMMAND ${stcgal_runner_command} flash
-            --image "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
-        DEPENDS ${CMAKE_PROJECT_NAME}
-        COMMENT "下载 ${CMAKE_PROJECT_NAME}，保留芯片当前硬件选项"
-        USES_TERMINAL
-        VERBATIM
-    )
-
-    add_custom_target(flash-with-options
-        COMMAND ${stcgal_runner_command} flash-with-options
-            --image "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
-        DEPENDS ${CMAKE_PROJECT_NAME}
-        COMMENT "下载 ${CMAKE_PROJECT_NAME}，并写入配置的硬件选项"
-        USES_TERMINAL
+        COMMENT "Reading STC device information and hardware options"
         VERBATIM
     )
 
     set_target_properties(
         stc-config-check
         stc-info
-        flash
-        flash-with-options
         PROPERTIES FOLDER "${CMAKE_PROJECT_NAME}"
     )
 else()
     message(STATUS "uv was not found; STC flash targets are disabled")
 endif()
 
-# 为主固件和两个烧录目标补充同名的 CLion“运行”行为，不新增 CMake 目标。
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea")
+# 烧录项只属于 CLion 运行配置，不创建同名 CMake target。
+if(UV_EXECUTABLE
+   AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea"
+   AND STCGAL_CLION_RUN_CONFIG_LOCK_RESULT STREQUAL "0")
     file(MAKE_DIRECTORY "${STCGAL_CLION_RUN_CONFIG_DIR}")
-
     set(CLION_TARGET_FOLDER "${CMAKE_PROJECT_NAME}")
-    set(CLION_CMAKE_EXECUTABLE "${CMAKE_COMMAND}")
-    set(CLION_CMAKE_PROFILE "STC89C52RC-Debug")
+    set(CLION_BUILD_TARGET "${CMAKE_PROJECT_NAME}")
+    set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
     set(expected_run_configs)
 
-    set(clion_run_targets "${CMAKE_PROJECT_NAME}")
-    if(UV_EXECUTABLE)
-        list(APPEND clion_run_targets flash flash-with-options)
-    endif()
-
-    foreach(CLION_RUN_TARGET IN LISTS clion_run_targets)
+    foreach(CLION_RUN_TARGET IN ITEMS flash flash-with-options)
+        if(CLION_RUN_TARGET STREQUAL "flash")
+            set(stcgal_action "flash")
+        else()
+            set(stcgal_action "flash-with-options")
+        endif()
+        set(CLION_RUN_PARAMETERS
+            "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; ${stcgal_action} --image &quot;$CMakeCurrentProductFile$&quot;"
+        )
         set(clion_run_config
             "${STCGAL_CLION_RUN_CONFIG_DIR}/STC89_Auto_${CLION_RUN_TARGET}.xml"
         )
@@ -87,7 +79,6 @@ if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea")
         list(APPEND expected_run_configs "${clion_run_config}")
     endforeach()
 
-    # 删除由本脚本生成、但已经不再对应当前目标的旧运行配置。
     file(GLOB existing_run_configs
         "${STCGAL_CLION_RUN_CONFIG_DIR}/STC89_Auto_*.xml"
     )
