@@ -167,7 +167,7 @@ uv run --script tools/stcgal_runner.py `
 
 ### 在 CLion 中运行并烧录
 
-CMake target 由 CLion 自动生成不带后缀的运行配置，工程另外生成两个共享烧录配置；
+CMake 为每套实验生成三个共享运行配置；
 三者统一放在同名实验文件夹中：
 
 - `<目标名>`：点击“运行”构建固件，不执行烧录。

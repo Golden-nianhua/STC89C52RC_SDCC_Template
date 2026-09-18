@@ -100,8 +100,8 @@ stcgal_add_clion_tool_configuration(
     "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; info"
 )
 
-# 不带后缀的配置由 CLion 根据 CMake target 自动生成；这里只生成两个烧录配置。
-# 这样新源码首次刷新时，CMake 模型会先注册 target，不会被同名共享配置抢先占位。
+# 三个配置都显式生成为共享配置，避免 CLion 在重新导入工程后漏掉无后缀配置。
+# 无后缀配置只构建固件；另外两个配置在构建成功后执行对应的烧录操作。
 function(stcgal_add_clion_experiment_configurations run_name firmware_target)
     if(NOT IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea"
        OR NOT STCGAL_CLION_RUN_CONFIG_LOCK_RESULT STREQUAL "0")
@@ -112,15 +112,20 @@ function(stcgal_add_clion_experiment_configurations run_name firmware_target)
 
     set(CLION_TARGET_FOLDER "${run_name}")
     set(CLION_BUILD_TARGET "${firmware_target}")
-    set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
-    foreach(suffix IN ITEMS flash flash_with_options)
-        if(suffix STREQUAL "flash")
+    foreach(suffix IN ITEMS firmware flash flash_with_options)
+        if(suffix STREQUAL "firmware")
+            set(CLION_RUN_TARGET "${run_name}")
+            set(CLION_RUN_EXECUTABLE "${CMAKE_COMMAND}")
+            set(CLION_RUN_PARAMETERS "-E true")
+        elseif(suffix STREQUAL "flash")
             set(CLION_RUN_TARGET "${run_name}_flash")
+            set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
             set(CLION_RUN_PARAMETERS
                 "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; flash --image &quot;$CMakeCurrentProductFile$&quot;"
             )
         else()
             set(CLION_RUN_TARGET "${run_name}_flash_with_options")
+            set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
             set(CLION_RUN_PARAMETERS
                 "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; flash-with-options --image &quot;$CMakeCurrentProductFile$&quot;"
             )
