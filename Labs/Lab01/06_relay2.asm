@@ -25,7 +25,7 @@ main:                              ; 主程序入口，只在复位后执行一�
         mov       LAST_K1, c        ; 保存候选状态，后续采样与它比较。
         mov       r5, #0             ; 连续相同采样次数清零。
 main_loop:                         ; 每约 10 ms 执行一次按键采样。
-        acall     debounce_10ms     ; 等待约 10 ms，形成固定采样周期。
+        acall     delay_10ms     ; 等待约 10 ms，形成固定采样周期。
         mov       c, K1             ; 读取当前按键电平并暂存在进位标志 C 中。
         jb        LAST_K1, candidate_high ; 候选为高电平时转入高电平比较。
         jc        sample_changed    ; 候选低、当前高：候选变化，重新计数。
@@ -48,11 +48,11 @@ sample_changed:                    ; 采样与候选状态不同，可能仍在�
         mov       r5, #0             ; 反向采样使连续稳定计数重新开始。
         sjmp      main_loop         ; 等待候选状态连续稳定约 50 ms。
 ; -----------------------------------------------------------------------------
-debounce_10ms:                     ; 约 10 ms 软件延时，使用 R6 和 R7 组成双层循环。
-        mov       r6, #41           ; 外层循环 40 次；12 MHz、6T 时每机器周期约 0.5 us。
-debounce_outer:                    ; 外层循环入口，每轮重新装载内层循环计数器。
+delay_10ms:                     ; 约 10 ms 软件延时，使用 R6 和 R7 组成双层循环。
+        mov       r6, #40           ; 外层循环 40 次；12 MHz、6T 时每机器周期约 0.5 us。
+delay_outer:                    ; 外层循环入口，每轮重新装载内层循环计数器。
         mov       r7, #250         ; 内层循环 250 次，以 DJNZ 消耗主要延时时间。
-debounce_inner:                    ; 内层延时循环入口。
-        djnz      r7, debounce_inner ; R7 减 1，未减到 0 时继续内层循环。
-        djnz      r6, debounce_outer ; R6 减 1，未减到 0 时开始下一轮内层循环。
+delay_inner:                    ; 内层延时循环入口。
+        djnz      r7, delay_inner ; R7 减 1，未减到 0 时继续内层循环。
+        djnz      r6, delay_outer ; R6 减 1，未减到 0 时开始下一轮内层循环。
         ret                         ; 延时结束，返回采样流程。

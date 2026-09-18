@@ -48,34 +48,29 @@ foreach(source IN LISTS LAB_SOURCES)
     set(source_name "${CMAKE_MATCH_2}")
     set(source_language "${CMAKE_MATCH_3}")
 
-    if(lab_number LESS_EQUAL 4 AND NOT source_language STREQUAL "asm")
-        message(FATAL_ERROR "${source}: Lab01-Lab04 must use assembly (.asm)")
-    elseif(lab_number GREATER_EQUAL 5 AND NOT source_language STREQUAL "c")
-        message(FATAL_ERROR "${source}: Lab05-Lab08 must use C (.c)")
-    endif()
-
     string(TOLOWER "lab${lab_number}_${source_name}" target)
     string(REGEX REPLACE "[^a-z0-9_]+" "_" target "${target}")
-    if(TARGET "${target}")
+    set(firmware_target "${target}")
+    if(TARGET "${firmware_target}")
         message(FATAL_ERROR "Duplicate experiment target name: ${target}")
     endif()
 
-    add_executable("${target}" EXCLUDE_FROM_ALL "${source}")
-    set_target_properties("${target}" PROPERTIES
+    add_executable("${firmware_target}" EXCLUDE_FROM_ALL "${source}")
+    set_target_properties("${firmware_target}" PROPERTIES
         FOLDER "${target}"
         LINKER_LANGUAGE C
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/firmware"
     )
 
     if(source_language STREQUAL "c")
-        target_include_directories("${target}" PRIVATE "${CMAKE_SOURCE_DIR}/Include")
-        target_compile_options("${target}" PRIVATE
+        target_include_directories("${firmware_target}" PRIVATE "${CMAKE_SOURCE_DIR}/Include")
+        target_compile_options("${firmware_target}" PRIVATE
             ${SDCC_MCS51_OPTIONS}
             --std-c11
             $<$<CONFIG:Debug>:--debug>
             $<$<CONFIG:Release>:--opt-code-size>
         )
-        target_link_options("${target}" PRIVATE
+        target_link_options("${firmware_target}" PRIVATE
             ${SDCC_MCS51_OPTIONS}
             "SHELL:--code-size ${STC_CODE_SIZE}"
             "SHELL:--iram-size ${STC_IRAM_SIZE}"
@@ -84,8 +79,7 @@ foreach(source IN LISTS LAB_SOURCES)
             $<$<CONFIG:Release>:--opt-code-size>
         )
     else()
-        # 汇编实验自行提供复位及中断向量，不链接 SDCC 的 C 运行时入口。
-        target_link_options("${target}" PRIVATE
+        target_link_options("${firmware_target}" PRIVATE
             ${SDCC_MCS51_OPTIONS}
             --nostdlib
             "SHELL:--code-size ${STC_CODE_SIZE}"
@@ -94,12 +88,12 @@ foreach(source IN LISTS LAB_SOURCES)
         )
     endif()
 
-    set(firmware_ihx "$<TARGET_FILE:${target}>")
-    set(firmware_hex "$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.hex")
-    set(firmware_bin "$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.bin")
-    set(firmware_mem "$<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.mem")
+    set(firmware_ihx "$<TARGET_FILE:${firmware_target}>")
+    set(firmware_hex "${CMAKE_BINARY_DIR}/firmware/${target}.hex")
+    set(firmware_bin "${CMAKE_BINARY_DIR}/firmware/${target}.bin")
+    set(firmware_mem "${CMAKE_BINARY_DIR}/firmware/${target}.mem")
 
-    add_custom_command(TARGET "${target}" POST_BUILD
+    add_custom_command(TARGET "${firmware_target}" POST_BUILD
         COMMAND "${CMAKE_COMMAND}"
             "-DPACKIHX=${SDCC_PACKIHX}"
             "-DINPUT=${firmware_ihx}"
@@ -120,22 +114,29 @@ foreach(source IN LISTS LAB_SOURCES)
         VERBATIM
     )
 
-    set_target_properties("${target}" PROPERTIES
+    set_target_properties("${firmware_target}" PROPERTIES
         ADDITIONAL_CLEAN_FILES
             "${CMAKE_BINARY_DIR}/firmware/${target}.bin;${CMAKE_BINARY_DIR}/firmware/${target}.hex;${CMAKE_BINARY_DIR}/firmware/${target}.lk;${CMAKE_BINARY_DIR}/firmware/${target}.map;${CMAKE_BINARY_DIR}/firmware/${target}.mem"
     )
 
-    stcgal_add_flash_targets("${target}" "${target}")
-    stcgal_add_clion_run_configuration("${target}" "${target}")
-    list(APPEND lab_targets "${target}")
+    stcgal_add_clion_experiment_configurations("${target}" "${firmware_target}")
+    list(APPEND lab_targets "${firmware_target}")
+    list(APPEND lab_target_names "${target}")
 endforeach()
 
-stcgal_cleanup_clion_run_configurations()
-
 if(lab_targets)
-    add_custom_target(coursework_all DEPENDS ${lab_targets})
-    list(JOIN lab_targets ", " lab_target_summary)
+    add_custom_target(coursework_all_build DEPENDS ${lab_targets})
+    stcgal_add_clion_tool_configuration(
+        coursework_all
+        coursework_all_build
+        "tools"
+        "${CMAKE_COMMAND}"
+        "--build &quot;$CMakeCurrentBuildDir$&quot; --target coursework_all_build"
+    )
+    list(JOIN lab_target_names ", " lab_target_summary)
     message(STATUS "Coursework targets: ${lab_target_summary}")
 else()
     message(WARNING "No experiment sources found under Labs/Lab01 through Labs/Lab08")
 endif()
+
+stcgal_cleanup_clion_run_configurations()

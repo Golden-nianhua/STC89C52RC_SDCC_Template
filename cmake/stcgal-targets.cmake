@@ -9,9 +9,11 @@ find_program(
 
 if(NOT UV_EXECUTABLE)
     message(STATUS "uv was not found; STC flash targets are disabled")
-    function(stcgal_add_flash_targets firmware_target target_folder)
+    function(stcgal_add_clion_experiment_configurations run_name firmware_target)
     endfunction()
-    function(stcgal_add_clion_run_configuration firmware_target target_folder)
+    function(stcgal_add_clion_tool_configuration run_name build_target target_folder run_executable run_parameters)
+    endfunction()
+    function(stcgal_cleanup_clion_run_configurations)
     endfunction()
     return()
 endif()
@@ -43,44 +45,64 @@ if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea")
     endif()
 endif()
 
-add_custom_target(stc_config_check
+function(stcgal_add_clion_tool_configuration run_name build_target target_folder run_executable run_parameters)
+    if(NOT IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea"
+       OR NOT STCGAL_CLION_RUN_CONFIG_LOCK_RESULT STREQUAL "0")
+        return()
+    endif()
+
+    file(MAKE_DIRECTORY "${STCGAL_CLION_RUN_CONFIG_DIR}")
+    set(CLION_RUN_TARGET "${run_name}")
+    set(CLION_BUILD_TARGET "${build_target}")
+    set(CLION_TARGET_FOLDER "${target_folder}")
+    set(CLION_RUN_EXECUTABLE "${run_executable}")
+    set(CLION_RUN_PARAMETERS "${run_parameters}")
+    set(clion_custom_run_config
+        "${STCGAL_CLION_RUN_CONFIG_DIR}/STC89_Auto_${CLION_RUN_TARGET}.xml"
+    )
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/cmake/clion-tool-run.xml.in"
+        "${clion_custom_run_config}"
+        @ONLY
+        NEWLINE_STYLE CRLF
+    )
+    set_property(
+        GLOBAL APPEND PROPERTY STCGAL_CLION_RUN_CONFIGS "${clion_custom_run_config}"
+    )
+endfunction()
+
+add_custom_target(stc_config_check_build
     COMMAND ${stcgal_runner_command} check
     COMMENT "Validating the local STC configuration"
     VERBATIM
 )
 
-add_custom_target(stc_info
+add_custom_target(stc_info_build
     COMMAND ${stcgal_runner_command} info
     COMMENT "Reading STC device information and hardware options"
     VERBATIM
 )
 
-function(stcgal_add_flash_targets firmware_target target_folder)
-    add_custom_target("${firmware_target}_flash"
-        COMMAND ${stcgal_runner_command} flash
-            --image "$<TARGET_FILE:${firmware_target}>"
-        DEPENDS "${firmware_target}"
-        COMMENT "Flashing ${firmware_target} while preserving hardware options"
-        VERBATIM
-    )
+# 三个工具的共享配置使用用户可见的简洁名称；底层 CMake target 使用 build 后缀，
+# 供共享配置的“构建”按钮调用。共享配置本身不设置运行前构建任务。
+stcgal_add_clion_tool_configuration(
+    stc_config_check
+    stc_config_check_build
+    "tools"
+    "${UV_EXECUTABLE}"
+    "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; check"
+)
+stcgal_add_clion_tool_configuration(
+    stc_info
+    stc_info_build
+    "tools"
+    "${UV_EXECUTABLE}"
+    "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; info"
+)
 
-    add_custom_target("${firmware_target}_flash_with_options"
-        COMMAND ${stcgal_runner_command} flash-with-options
-            --image "$<TARGET_FILE:${firmware_target}>"
-        DEPENDS "${firmware_target}"
-        COMMENT "Flashing ${firmware_target} and applying configured hardware options"
-        VERBATIM
-    )
-
-    set_target_properties(
-        "${firmware_target}_flash"
-        "${firmware_target}_flash_with_options"
-        PROPERTIES FOLDER "${target_folder}"
-    )
-endfunction()
-
-# 为现有三个 CMake 目标补充同名的 CLion“运行”行为，不新增可见目标。
-function(stcgal_add_clion_run_configuration firmware_target target_folder)
+# 不带后缀的配置由 CLion 根据 CMake target 自动生成；这里只生成两个烧录配置。
+# 这样新源码首次刷新时，CMake 模型会先注册 target，不会被同名共享配置抢先占位。
+function(stcgal_add_clion_experiment_configurations run_name firmware_target)
     if(NOT IS_DIRECTORY "${CMAKE_SOURCE_DIR}/.idea"
        OR NOT STCGAL_CLION_RUN_CONFIG_LOCK_RESULT STREQUAL "0")
         return()
@@ -88,23 +110,19 @@ function(stcgal_add_clion_run_configuration firmware_target target_folder)
 
     file(MAKE_DIRECTORY "${STCGAL_CLION_RUN_CONFIG_DIR}")
 
-    set(CLION_TARGET_FOLDER "${target_folder}")
+    set(CLION_TARGET_FOLDER "${run_name}")
     set(CLION_BUILD_TARGET "${firmware_target}")
-    foreach(suffix IN ITEMS firmware flash flash_with_options)
-        if(suffix STREQUAL "firmware")
-            set(CLION_RUN_TARGET "${firmware_target}")
-            set(CLION_RUN_EXECUTABLE "${CMAKE_COMMAND}")
-            set(CLION_RUN_PARAMETERS "-E true")
-        else()
-            set(CLION_RUN_TARGET "${firmware_target}_${suffix}")
-            set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
-            if(suffix STREQUAL "flash")
-                set(stcgal_action "flash")
-            else()
-                set(stcgal_action "flash-with-options")
-            endif()
+    set(CLION_RUN_EXECUTABLE "${UV_EXECUTABLE}")
+    foreach(suffix IN ITEMS flash flash_with_options)
+        if(suffix STREQUAL "flash")
+            set(CLION_RUN_TARGET "${run_name}_flash")
             set(CLION_RUN_PARAMETERS
-                "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; ${stcgal_action} --image &quot;$CMakeCurrentProductFile$&quot;"
+                "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; flash --image &quot;$CMakeCurrentProductFile$&quot;"
+            )
+        else()
+            set(CLION_RUN_TARGET "${run_name}_flash_with_options")
+            set(CLION_RUN_PARAMETERS
+                "run --script &quot;${STCGAL_RUNNER}&quot; --config &quot;${STCGAL_CONFIG}&quot; flash-with-options --image &quot;$CMakeCurrentProductFile$&quot;"
             )
         endif()
         set(clion_custom_run_config

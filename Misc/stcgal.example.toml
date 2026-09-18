@@ -9,7 +9,7 @@
 #   stc_config_check  检查本文件的格式和选项取值。
 #   stc_info          读取芯片型号、时钟、BSL 版本和当前硬件选项。
 #
-# 每个实验固件各自提供两个下载目标，例如：
+# 每个实验固件各自提供两个 CLion 烧录运行配置，例如：
 #   lab01_01_led_flash               下载程序，保留芯片当前硬件选项。
 #   lab01_01_led_flash_with_options  下载程序，并写入本文件中的硬件选项。
 #
@@ -31,8 +31,8 @@ handshake_baud = 2400
 transfer_baud = 19200
 
 # 是否在连接前自动给 MCU 断电再上电。
-# true：stc_info 和所有 *_flash* 目标都会先自动冷启动，再通信或烧录。
-# false：不控制电源，所有目标均等待用户手动断电再上电。
+# true：stc_info 和所有 *_flash* 运行配置都会先自动冷启动，再通信或烧录。
+# false：不控制电源，所有下载操作均等待用户手动断电再上电。
 auto_power_cycle = false
 
 # 自动冷启动使用的控制线，可选值为 "dtr" 或 "rts"。
@@ -44,8 +44,8 @@ reset_pin = "rts"
 keep_dtr_inactive = true
 
 [hardware_options]
-# 以下选项仅由 *_flash_with_options 目标使用。
-# 普通 *_flash 目标会保留芯片当前硬件选项。
+# 以下选项仅由 *_flash_with_options 运行配置使用。
+# 普通 *_flash 运行配置会保留芯片当前硬件选项。
 
 # 系统速度是否加倍。
 # true：采用 6T（双倍速）模式。
