@@ -24,7 +24,15 @@ CLion 会自动识别两个 CMake 预设。`Misc/custom-compiler-sdcc-mcs51.yaml
 
 ## 配置 stcgal
 
-下载工具固定使用 `stcgal==1.10`，由 uv 自动创建隔离环境，无需手动维护 Python 环境。首次使用时复制示例配置：
+下载工具固定使用 `stcgal==1.10`，由 uv 自动创建隔离环境，无需手动维护 Python 环境。
+仓库中的 `tools/stcgal_runner.py.lock` 固定了完整 Python 依赖版本，但 uv 本身需要单独安装：
+
+```powershell
+winget install --id astral-sh.uv -e
+uv --version
+```
+
+首次使用时复制示例配置：
 
 ```powershell
 Copy-Item Misc/stcgal.example.toml Misc/stcgal.toml
@@ -46,8 +54,8 @@ Copy-Item Misc/stcgal.example.toml Misc/stcgal.toml
 cmake --build build/Debug --target stc-config-check
 cmake --build build/Debug --target stc-info
 cmake --build build/Debug --target STC89C52RC_SDCC_Template
-D:/Code/uv/uv.exe run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
-D:/Code/uv/uv.exe run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash-with-options --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
+uv run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
+uv run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash-with-options --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
 ```
 
 - `stc-config-check`：检查 TOML，并显示自动冷启动及硬件选项效果。
