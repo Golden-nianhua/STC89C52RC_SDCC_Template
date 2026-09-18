@@ -33,6 +33,14 @@ SDCC C 流程。请勿在同一 Lab 中放置主文件名相同、扩展名不�
 默认 SDCC 路径为 `D:/Code/c-env/SDCC/SDCC-4.6.0`。CMake 可通过缓存变量
 `SDCC_ROOT` 覆盖该路径，`tools/stc.ps1` 可通过同名环境变量覆盖。
 
+stcgal 由 uv 管理。仓库中的 `tools/stcgal_runner.py.lock` 固定完整 Python 依赖版本，
+但 uv 本身需要单独安装并加入 PATH：
+
+```powershell
+winget install --id astral-sh.uv -e
+uv --version
+```
+
 首次下载前创建本机配置：
 
 ```powershell
@@ -72,12 +80,12 @@ cmake --build build/Debug --target stc_info_build
 
 ```powershell
 # 保留芯片当前硬件选项
-D:/Code/uv/uv.exe run --script tools/stcgal_runner.py `
+uv run --script tools/stcgal_runner.py `
     --config Misc/stcgal.toml flash `
     --image build/Debug/firmware/lab01_01_led.ihx
 
 # 写入 stcgal.toml 中的硬件选项
-D:/Code/uv/uv.exe run --script tools/stcgal_runner.py `
+uv run --script tools/stcgal_runner.py `
     --config Misc/stcgal.toml flash-with-options `
     --image build/Debug/firmware/lab01_01_led.ihx
 ```
@@ -129,7 +137,7 @@ New-Item -ItemType Directory -Force $output | Out-Null
 硬件选项的行为与 CLion 一致：
 
 ```powershell
-D:/Code/uv/uv.exe run --script tools/stcgal_runner.py `
+uv run --script tools/stcgal_runner.py `
     --config Misc/stcgal.toml flash `
     --image build/manual/lab01_01_led.ihx
 ```

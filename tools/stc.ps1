@@ -61,7 +61,11 @@ if ($Flash) {
     if (-not (Test-Path -LiteralPath $image -PathType Leaf)) {
         throw "找不到固件：$image，请先使用 -Build。"
     }
-    $uv = "D:\Code\uv\uv.exe"
+    $uvCommand = Get-Command uv -ErrorAction SilentlyContinue
+    $uv = if ($uvCommand) { $uvCommand.Source } else { "D:\Code\uv\uv.exe" }
+    if (-not (Test-Path -LiteralPath $uv -PathType Leaf)) {
+        throw "找不到 uv，请先安装 uv 并加入 PATH。"
+    }
     & $uv run --script (Join-Path $project "tools/stcgal_runner.py") `
         --config (Join-Path $project "Misc/stcgal.toml") flash --image $image
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
