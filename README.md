@@ -51,15 +51,15 @@ Copy-Item Misc/stcgal.example.toml Misc/stcgal.toml
 ## 构建、读取与下载
 
 ```powershell
-cmake --build build/Debug --target stc-config-check
-cmake --build build/Debug --target stc-info
+cmake --build build/Debug --target stc_config_check_build
+cmake --build build/Debug --target stc_info_build
 cmake --build build/Debug --target STC89C52RC_SDCC_Template
 uv run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
 uv run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash-with-options --image build/Debug/firmware/STC89C52RC_SDCC_Template.ihx
 ```
 
-- `stc-config-check`：检查 TOML，并显示自动冷启动及硬件选项效果。
-- `stc-info`：只读取芯片型号、时钟、BSL 版本和当前硬件选项。
+- `stc_config_check_build`：检查 TOML，并显示自动冷启动及硬件选项效果。
+- `stc_info_build`：只读取芯片型号、时钟、BSL 版本和当前硬件选项。
 - `flash`：下载程序，保留芯片当前硬件选项。
 - `flash-with-options`：下载程序，同时写入 TOML 中配置的硬件选项。
 
@@ -67,14 +67,14 @@ uv run --script tools/stcgal_runner.py --config Misc/stcgal.toml flash-with-opti
 
 ## 在 CLion 中点击运行
 
-CMake 只创建 `STC89C52RC_SDCC_Template` 固件目标，CLion 为它自动生成同名配置。
-工程会在 `.idea/runConfigurations` 额外生成两个烧录运行配置：
+CMake 为固件和工具生成共享运行配置。固件的三个配置收纳在 `App` 文件夹中：
 
-- `STC89C52RC_SDCC_Template`：使用“构建”生成固件，不烧录。
-- `flash`：点击“运行”，先构建固件，再普通烧录并保留硬件选项。
-- `flash-with-options`：点击“运行”，先构建固件，再烧录并写入硬件选项。
+- `STC89C52RC_SDCC_Template`：点击“运行”或“构建”只生成固件，不烧录。
+- `STC89C52RC_SDCC_Template_flash`：先构建固件，再烧录并保留硬件选项。
+- `STC89C52RC_SDCC_Template_flash_with_options`：先构建固件，再烧录并写入硬件选项。
 
-`flash` 和 `flash-with-options` 不是 CMake target，不会与 CLion 自动配置重名，也不能通过“构建”执行。
+`stc_config_check` 和 `stc_info` 收纳在 `tools` 文件夹中，点击“运行”时直接执行，
+不会额外触发构建；点击“构建”则执行对应的底层 CMake target。
 生成的本机运行配置已被 Git 忽略，不会污染模板仓库。
 
 ## Keil C51 兼容

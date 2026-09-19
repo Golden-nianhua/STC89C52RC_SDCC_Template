@@ -6,12 +6,11 @@
 #   false = 对应官方 STC-ISP 工具中的“不选/不勾选”
 #
 # CMake 目标：
-#   stc-config-check    检查本文件的格式和选项取值。
-#   stc-info            读取芯片型号、时钟、BSL 版本和当前硬件选项。
+#   stc_config_check_build  检查本文件的格式和选项取值。
+#   stc_info_build          读取芯片型号、时钟、BSL 版本和当前硬件选项。
 #
-# CLion 烧录运行配置：
-#   flash               下载程序，保留芯片当前硬件选项。
-#   flash-with-options  下载程序，并写入本文件中的硬件选项。
+# CLion 的 App 文件夹包含固件构建、普通烧录和写入硬件选项三个运行配置；
+# tools 文件夹包含 stc_config_check 和 stc_info 两个运行配置。
 
 [connection]
 # 与单片机 ISP 串口连接的 Windows 串口号，例如 "COM1"、"COM6"。
@@ -29,7 +28,7 @@ handshake_baud = 2400
 transfer_baud = 19200
 
 # 是否在连接前自动给 MCU 断电再上电。
-# true：stc-info、flash 和 flash-with-options 均先自动冷启动。
+# true：stc_info、普通烧录和写入硬件选项烧录均先自动冷启动。
 # false：不控制电源，等待用户手动断电再上电。
 auto_power_cycle = false
 
@@ -42,7 +41,7 @@ reset_pin = "rts"
 keep_dtr_inactive = false
 
 [hardware_options]
-# 以下选项仅由 flash-with-options 运行配置使用；普通 flash 保留芯片当前硬件选项。
+# 以下选项仅由带 _flash_with_options 后缀的运行配置使用；普通烧录保留芯片当前硬件选项。
 
 # 系统速度是否加倍。
 # true：采用 6T（双倍速）模式。

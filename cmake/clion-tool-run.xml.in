@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="@CLION_RUN_TARGET@" type="CMakeRunConfiguration" factoryName="Application" folderName="@CLION_TARGET_FOLDER@" PROGRAM_PARAMS="@CLION_RUN_PARAMETERS@" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="@CMAKE_PROJECT_NAME@" TARGET_NAME="@CLION_BUILD_TARGET@" CONFIG_NAME="STC89C52RC-Debug" RUN_PATH="@CLION_RUN_EXECUTABLE@">
+    <method v="2" />
+  </configuration>
+</component>

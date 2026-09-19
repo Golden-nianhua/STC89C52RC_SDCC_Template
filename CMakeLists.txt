@@ -25,7 +25,7 @@ add_executable(${CMAKE_PROJECT_NAME})
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/firmware"
-    FOLDER "${CMAKE_PROJECT_NAME}"
+    FOLDER "App"
 )
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
